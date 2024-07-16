@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <style>
+      input{
+         width: 210px;
+         height: 60px;
+         font-size: 40px;
+      }
+   </style>
+<script src="ECGdat.js"></script>
+</head>
+
+<body>
+<input id="Button1" onclick="drawECG()" type="button" value="繪製心電圖" /><br><br>
+<input id="Button2" onclick="drawECG_start()" type="button" value="開始" />
+<input id="Button3" onclick="drawECG_stop()" type="button" value="暫停" />
+<input id="Button4" onclick="clear()" type="button" value="清除繪圖" /><br>
+<canvas id="myCanvas" width="1800" height="1800" style="border:1px solid #984545;"></canvas>
+<script>
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+var al=0;
+drawGrid();
+
+function drawGrid() {//畫格子
+   ctx.beginPath();
+   ctx.strokeStyle="#FF0000";//red
+   for(i=0;i<1800;i=i+36){//細直線12
+      ctx.moveTo(i,0);
+      ctx.lineTo(i,800);
+      ctx.moveTo(i,900);
+      ctx.lineTo(i,1700);
+   }
+
+   for(i=0;i<800; i=i+40){//細橫線1
+      ctx.moveTo(0,i);
+      ctx.lineTo(1800,i);
+   }
+
+   for(i=900;i<1700; i=i+40){//細橫線2
+      ctx.moveTo(0,i);
+      ctx.lineTo(1800,i);
+   }
+   ctx.stroke();
+
+   ctx.beginPath();
+   ctx.lineWidth= 3;
+   for(i=-1;i<=800; i=i+200){//粗直線1
+      ctx.moveTo(0,i);
+      ctx.lineTo(1800,i);
+   }
+
+   for(i=-1;i<=1800; i=i+360){//粗直線2
+      ctx.moveTo(i,900);
+      ctx.lineTo(i,1700);
+   }
+
+   for(i=-1;i<=1800; i=i+360){//粗橫線1
+      ctx.moveTo(i,0);
+      ctx.lineTo(i,800);
+   }
+
+   for(i=899;i<=1700; i=i+200){//粗橫線2
+      ctx.moveTo(0,i);
+      ctx.lineTo(1800,i);
+   }
+   ctx.stroke();
+}
+
+function drawECG(){//畫波型
+   //////波型一
+   ctx.beginPath();
+   ctx.strokeStyle="#0000FF";//blue
+   //ctx.moveTo(0,400 -(ECGdat[0][0]- 1024));
+   
+   for(i=0;i<1800;i++){ 
+         ctx.lineTo(i+al,400 -(ECGdat[i][0]- 1024)); 
+   }
+   ctx.stroke();
+
+   //////波型二
+   ctx.beginPath();
+   ctx.strokeStyle="#0000FF";
+   //ctx.moveTo(0,1300 -(ECGdat[0][1]- 1024));
+   
+   for(i=0;i<1800;i++){
+      ctx.lineTo(i+al,1300 -(ECGdat[i][1]- 1024));  
+   }  
+   ctx.stroke();
+}
+
+var timer=function animate() {
+   ctx.clearRect(0,0,c.width,c.height);//清畫布
+   drawGrid();
+   ctx.beginPath();
+   ctx.strokeStyle="#0000FF";
+   //////波型一
+   
+   for(i=0;i<1800;i++){
+      if((i+al)>0){//i+al=x軸
+         ctx.lineTo(i+al,400 -(ECGdat[i][0]- 1024));
+         if(i+al<0){
+            ctx.closePath();
+         }
+      }
+      else if((i+al)<0){
+         //ctx.moveTo(1800,400 -(ECGdat[i][0]- 1024));
+         ctx.lineTo(1800,400 -(ECGdat[i][0]- 1024));
+      }
+   }
+   ctx.stroke();
+   
+   //////波型二
+   ctx.beginPath();
+   ctx.strokeStyle="#0000FF";
+   
+   for(i=0;i<1800;i++){
+      ctx.lineTo(i+al,1300 -(ECGdat[i][1]- 1024));  
+   }  
+   ctx.stroke();
+
+   al=al-100;
+   if(al<=-1800){
+      al=5;
+   }
+}
+
+setInterval(animate, 500); // 每500毫秒刷新一次畫布
+
+function drawECG_start(){//開始移動
+   interID = setInterval(timer, 300);
+}
+function drawECG_stop(){//停止移動
+    clearInterval(interID);
+}
+
+</script>
+<!--
+繪製重點筆
+<script>
+
+var ca = document.getElementById("myCanvas");
+var ctx = ca.getContext("2d");
+
+var clearButton = document.getElementById("Button4");
+clearButton.addEventListener("click", clear);
+
+// 設置變數來追蹤滑鼠狀態
+var isDrawing = false;
+
+ctx.lineWidth=5;
+// 監聽滑鼠按下事件
+ca.addEventListener("mousedown", startDrawing);
+
+// 監聽滑鼠移動事件
+ca.addEventListener("mousemove", draw);
+
+// 監聽滑鼠放開事件
+ca.addEventListener("mouseup", stopDrawing);
+
+// 開始繪畫
+function startDrawing(e) {
+   isDrawing = true;
+   draw(e); // 立即繪製一個點，以防止滑鼠移動時出現斷裂的線條
+}
+
+// 停止繪畫
+function stopDrawing() {
+   isDrawing = false;
+   ctx.beginPath();//放掉後都會重新開始路徑
+}
+
+// 繪製函數
+function draw(e) {
+   if (!isDrawing) return;
+
+   var x = e.clientX - ca.offsetLeft;
+   var y = e.clientY - ca.offsetTop;
+
+   ctx.lineWidth = 2;
+   ctx.lineCap = "round";
+   ctx.strokeStyle = "black";
+
+   ctx.lineTo(x, y);   
+   ctx.stroke();
+   ctx.beginPath();//會比較滑順 
+   ctx.moveTo(x, y);
+   //ctx.closePath();//因為執行了stopDrawing()會重新開始路徑，所以不用close
+}
+
+function clear(){
+   ctx.clearRect(0,0,ca.width,ca.height);
+   drawGrid();//畫格子
+   //drawECG();
+}
+</script>
+-->
+</body>
+</html>
